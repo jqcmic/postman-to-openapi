@@ -180,7 +180,6 @@ function parseBody(body = {}, method, requestBodyMeta = null) {
   }
 
   const { mode, raw, options = { raw } } = body;
-
   let content = {};
 
   switch (mode) {
@@ -188,10 +187,8 @@ function parseBody(body = {}, method, requestBodyMeta = null) {
       const {
         raw: { language },
       } = options;
-
+      
       const properties = (requestBodyMeta) ? parserRequestBodyJson(requestBodyMeta) : requestBodyMeta;
-
-
       let example = '';
       if (language === 'json') {
         if (raw) {
