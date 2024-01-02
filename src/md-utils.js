@@ -2,6 +2,27 @@ const { marked } = require('marked');
 
 const supHeaders = ['object', 'name', 'description', 'example', 'type', 'required'];
 
+function mdTableSelector(md, select) {
+  let goal = 1
+  const parsed = marked.lexer(md)
+  for (const el of parsed) {
+    goal += 1
+    if (el.type === 'heading') {
+      if (el.text === select) break
+    }
+  }
+
+  const table = parsed.find((el) => {
+    goal -= 1
+    if (el.type === 'table') {
+      if (goal === 0) return el
+    }
+    return null
+  })
+
+  return table
+}
+
 function parseMdTable(md) {
   const parsed = marked.lexer(md);
   const table = parsed.find(el => el.type === 'table');
@@ -35,4 +56,4 @@ function parseMdTable(md) {
   return tableObj;
 }
 
-module.exports = { parseMdTable };
+module.exports = { mdTableSelector, parseMdTable };
