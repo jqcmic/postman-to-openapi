@@ -80,13 +80,13 @@ async function postmanToOpenAPI(
         domains.add(calculateDomains(protocol, host, port));
         const joinedPath = calculatePath(path, pathDepth);
         if (!paths[joinedPath]) paths[joinedPath] = {};
-        const { description, paramsMeta } = descriptionParse(rawDesc);
+        const { description, paramsMeta, requestBodyMeta } = descriptionParse(rawDesc);
         paths[joinedPath][method.toLowerCase()] = {
           tags: [tag],
           summary,
           ...calculateOperationId(operationId, name, summary),
           ...(description ? { description } : {}),
-          ...parseBody(body, method),
+          ...parseBody(body, method, requestBodyMeta),
           ...parseOperationAuth(auth, securitySchemes, optsAuth),
           ...parseParameters(query, header, joinedPath, paramsMeta, pathVars, disabledParams),
           ...parseResponse(response, events, responseHeaders),
@@ -157,12 +157,12 @@ function parseContact(variables, optsContact = {}) {
   const { name = nameVar, url = urlVar, email = emailVar } = optsContact;
   return [name, url, email].some(e => e != null)
     ? {
-        contact: {
-          ...(name ? { name } : {}),
-          ...(url ? { url } : {}),
-          ...(email ? { email } : {}),
-        },
-      }
+      contact: {
+        ...(name ? { name } : {}),
+        ...(url ? { url } : {}),
+        ...(email ? { email } : {}),
+      },
+    }
     : {};
 }
 
@@ -173,13 +173,14 @@ function parseExternalDocs(variables, optsExternalDocs) {
   return url != null ? { externalDocs: { url, ...(description ? { description } : {}) } } : {};
 }
 
-function parseBody(body = {}, method) {
+function parseBody(body = {}, method, requestBodyMeta = null) {
   // Swagger validation return an error if GET has body
   if (['GET', 'DELETE'].includes(method)) {
     return {};
   }
 
   const { mode, raw, options = { raw } } = body;
+
   let content = {};
 
   switch (mode) {
@@ -187,6 +188,9 @@ function parseBody(body = {}, method) {
       const {
         raw: { language },
       } = options;
+
+      const properties = (requestBodyMeta) ? parserRequestBodyJson(requestBodyMeta) : requestBodyMeta;
+
 
       let example = '';
       if (language === 'json') {
@@ -201,6 +205,7 @@ function parseBody(body = {}, method) {
           'application/json': {
             schema: {
               type: 'object',
+              ...properties,
               example,
             },
           },
@@ -415,9 +420,9 @@ function parseOptsAuth(optAuth) {
   return Object.keys(securitySchemes).length === 0
     ? {}
     : {
-        components: { securitySchemes },
-        security,
-      };
+      components: { securitySchemes },
+      security,
+    };
 }
 
 /* From the path array compose the real path for OpenApi specs */
@@ -470,9 +475,9 @@ function scrapeURL(url) {
       url.variable == null
         ? {}
         : url.variable.reduce((obj, { key, value, description }) => {
-            obj[key] = { value, description, type: inferType(value) };
-            return obj;
-          }, {}),
+          obj[key] = { value, description, type: inferType(value) };
+          return obj;
+        }, {}),
   };
 }
 
@@ -515,6 +520,7 @@ function descriptionParse(description) {
   return {
     description: splitDesc[0].trim(),
     paramsMeta: parseMdTable(splitDesc[1]),
+    requestBodyMeta: parseMdTable(splitDesc[1])
   };
 }
 
@@ -709,6 +715,47 @@ function calculateOperationId(mode, name, summary) {
       break;
   }
   return operationId ? { operationId } : {};
+}
+
+function parserRequestBodyJson(tableObj) {
+  const properties = {}
+  const required = []
+  Object.keys(tableObj).map((key, index) => {
+    if (tableObj[key].type === 'object' || tableObj[key].type === 'object[]') {
+      properties[key] = parserRequestBodyJson(tableObj[key].object)
+    }
+
+    const squareBrackets = tableObj[key].type.lastIndexOf('[]')
+    properties[key] = (squareBrackets !== -1)
+      ? {
+        type: 'array',
+        items: {
+          type: tableObj[key].type.substring(0, squareBrackets),
+          ...properties[key]
+        },
+        description: tableObj[key].description
+      }
+      : {
+        type: tableObj[key].type,
+        ...properties[key],
+        description: tableObj[key].description
+      }
+
+    if (tableObj[key].required === 'true') {
+      required.push(key)
+    }
+
+    return properties
+  })
+
+  return (required.length === 0)
+    ? {
+      properties
+    }
+    : {
+      properties,
+      required
+    }
 }
 
 module.exports = postmanToOpenAPI;
