@@ -187,7 +187,7 @@ function parseBody(body = {}, method, requestBodyMeta = null) {
       const {
         raw: { language },
       } = options;
-      
+
       const properties = (requestBodyMeta) ? parserRequestBodyJson(requestBodyMeta) : requestBodyMeta;
       let example = '';
       if (language === 'json') {
@@ -309,6 +309,14 @@ function parseParameters(
 /* Accumulator function for different types of parameters */
 function mapParameters(type, includeDisabled, paramInserter) {
   return (parameterMap, { key, description, value, disabled }) => {
+
+    // if description is undefined
+    if (description === undefined || description.content === undefined) {
+      description = ""
+    } else {
+      description = description.content
+    }
+
     if (!includeDisabled && disabled === true) return parameterMap;
     const required = /\[required\]/gi.test(description);
     paramInserter(parameterMap, {
