@@ -742,8 +742,9 @@ function parserRequestBodyJson(tableObj) {
       }
       : {
         type: tableObj[key].type,
+        maxLength: tableObj[key].size,
         ...properties[key],
-        description: tableObj[key].description
+        description: 'UI Fieldname: ' + tableObj[key].uiformfieldname + '\n\n' + tableObj[key].description
       }
 
     if (tableObj[key].required === 'true') {

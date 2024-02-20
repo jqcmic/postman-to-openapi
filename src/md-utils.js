@@ -1,6 +1,6 @@
 const { marked } = require('marked');
 
-const supHeaders = ['object', 'name', 'description', 'example', 'type', 'required'];
+const supHeaders = ['object', 'name', 'description', 'example', 'type', 'required', 'size', 'uiformfieldname'];
 
 function parseMdTable(md) {
   const parsed = marked.lexer(md);
@@ -16,6 +16,12 @@ function parseMdTable(md) {
     return {};
   }
 
+  // Rename Headers (cmic specific)
+  const idxHeaderUiFieldName = header.indexOf('CMiC UI fieldname');
+  if (idxHeaderUiFieldName >= 0) {
+    header[idxHeaderUiFieldName] = 'uiformfieldname'
+  }
+
   const headers = header.map(h => (supHeaders.includes(h) ? h : false));
   const tableObj = cells.reduce((accTable, cell) => {
     const cellObj = cell.reduce((accCell, field, index) => {
@@ -23,7 +29,6 @@ function parseMdTable(md) {
         // eslint-disable-next-line no-param-reassign
         accCell[headers[index]] = field;
       }
-
       return accCell;
     }, {});
 
