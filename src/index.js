@@ -742,10 +742,11 @@ function parserRequestBodyJson(tableObj) {
       }
       : {
         type: tableObj[key].type,
-        // maxLength: tableObj[key].size,
+        ...(tableObj[key].size > 0) && { maxLength: tableObj[key].size },
         ...properties[key],
-        description: tableObj[key].description
-        //description: 'UI Fieldname: ' + tableObj[key].uiformfieldname + '\n\n' + tableObj[key].description
+        // description: tableObj[key].description
+        // description: '&#x1F4BB; UI Fieldname: ' + tableObj[key].uiformfieldname + '\n\n' + tableObj[key].description
+        description: tableObj[key].description + '\n\n' + '&#x1F4BB; UI Fieldname: ' + tableObj[key].uiformfieldname
       }
 
     if (tableObj[key].required === 'true') {

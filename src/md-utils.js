@@ -1,6 +1,7 @@
 const { marked } = require('marked');
 
 const supHeaders = ['object', 'name', 'description', 'example', 'type', 'required', 'size', 'uiformfieldname'];
+const supHeadersTypeAllowedList = ['array', 'boolean', 'integer', 'number', 'object', 'string'];
 
 function parseMdTable(md) {
   const parsed = marked.lexer(md);
@@ -22,9 +23,19 @@ function parseMdTable(md) {
     header[idxHeaderUiFieldName] = 'uiformfieldname'
   }
 
+
   const headers = header.map(h => (supHeaders.includes(h) ? h : false));
   const tableObj = cells.reduce((accTable, cell) => {
     const cellObj = cell.reduce((accCell, field, index) => {
+
+      // validate if accCell.type is one of array, boolean, integer, number, object, string (this is from openapi spec)
+      accCell.type = supHeadersTypeAllowedList.includes(accCell.type) ? accCell.type : "string";
+
+      // set size as a number
+      // accCell.size = Number.isInteger(accCell.size) ? +accCell.size : 0;
+      sizeValue = +accCell.size
+      accCell.size = isNaN(sizeValue) ? 0 : sizeValue;
+
       if (headers[index]) {
         // eslint-disable-next-line no-param-reassign
         accCell[headers[index]] = field;
