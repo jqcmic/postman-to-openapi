@@ -21,6 +21,8 @@ function parseMdTable(md) {
   const idxHeaderUiFieldName = header.indexOf('CMiC UI fieldname');
   if (idxHeaderUiFieldName >= 0) {
     header[idxHeaderUiFieldName] = 'uiformfieldname'
+  } else {
+    header.unshift('uiformfieldname')
   }
 
 
@@ -30,6 +32,10 @@ function parseMdTable(md) {
 
       // validate if accCell.type is one of array, boolean, integer, number, object, string (this is from openapi spec)
       accCell.type = supHeadersTypeAllowedList.includes(accCell.type) ? accCell.type : "string";
+
+      if (!Object.hasOwn(accCell, 'uiformfieldname')) {
+        accCell.uiformfieldname = ''
+      }
 
       // set size as a number
       // accCell.size = Number.isInteger(accCell.size) ? +accCell.size : 0;
